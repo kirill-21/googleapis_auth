@@ -14,19 +14,19 @@ abstract class AuthorizationCodeGrantAbstractFlow implements BaseFlow {
   final String? hostedDomain;
   final List<String> scopes;
   final http.Client _client;
-  final String? customPage;
 
-  AuthorizationCodeGrantAbstractFlow(this.clientId,
-      this.scopes,
-      this._client, {
-        this.hostedDomain,
-        this.customPage,
-      });
+  AuthorizationCodeGrantAbstractFlow(
+    this.clientId,
+    this.scopes,
+    this._client, {
+    this.hostedDomain,
+  });
 
-  Future<AccessCredentials> obtainAccessCredentialsUsingCodeImpl(String code,
-      String redirectUri, {
-        required String codeVerifier,
-      }) =>
+  Future<AccessCredentials> obtainAccessCredentialsUsingCodeImpl(
+    String code,
+    String redirectUri, {
+    required String codeVerifier,
+  }) =>
       obtainAccessCredentialsViaCodeExchange(
         _client,
         clientId,
@@ -35,7 +35,8 @@ abstract class AuthorizationCodeGrantAbstractFlow implements BaseFlow {
         codeVerifier: codeVerifier,
       );
 
-  Uri authenticationUri(String redirectUri, {
+  Uri authenticationUri(
+    String redirectUri, {
     String? state,
     required String codeVerifier,
   }) =>

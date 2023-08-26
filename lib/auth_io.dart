@@ -33,9 +33,9 @@ export 'src/typedefs.dart';
 ///     in a well-known location (`%APPDATA%/gcloud/application_default_credentials.json`
 ///     on Windows and `$HOME/.config/gcloud/application_default_credentials.json` on Linux/Mac).
 ///  3. On Google Compute Engine and App Engine Flex we fetch credentials from
-///     [GCE metadata service][metadata].
+///     [GCE metadata service][meta-data].
 ///
-/// [metadata]: https://cloud.google.com/compute/docs/storing-retrieving-metadata
+/// [meta-data]: https://cloud.google.com/compute/docs/storing-retrieving-metadata
 /// [svc-keys]: https://cloud.google.com/docs/authentication/getting-started
 /// [gcloud-login]: https://cloud.google.com/sdk/gcloud/reference/auth/application-default/login
 ///
@@ -73,8 +73,12 @@ Future<AutoRefreshingAuthClient> clientViaApplicationDefaultCredentials({
           .resolve('gcloud/application_default_credentials.json'),
     );
   } else {
+    final homeVar = Platform.environment['HOME'];
+    if (homeVar == null) {
+      throw StateError('The expected environment variable HOME must be set.');
+    }
     credFile = File.fromUri(
-      Uri.directory(Platform.environment['HOME']!)
+      Uri.directory(homeVar)
           .resolve('.config/gcloud/application_default_credentials.json'),
     );
   }
@@ -110,12 +114,18 @@ Future<AutoRefreshingAuthClient> clientViaApplicationDefaultCredentials({
 ///
 /// {@macro googleapis_auth_close_the_client}
 /// {@macro googleapis_auth_not_close_the_baseClient}
-Future<AutoRefreshingAuthClient> clientViaUserConsent(ClientId clientId,
-    List<String> scopes,
-    PromptUserForConsent userPrompt, {
-      Client? baseClient,
-      String? hostedDomain,
-    }) async {
+/// {@macro googleapis_auth_listen_port}
+///
+/// {@macro googleapis_auth_custom_post_auth_page}
+Future<AutoRefreshingAuthClient> clientViaUserConsent(
+  ClientId clientId,
+  List<String> scopes,
+  PromptUserForConsent userPrompt, {
+  Client? baseClient,
+  String? hostedDomain,
+  int listenPort = 0,
+  String? customPostAuthPage,
+}) async {
   var closeUnderlyingClient = false;
   if (baseClient == null) {
     baseClient = Client();
@@ -128,6 +138,8 @@ Future<AutoRefreshingAuthClient> clientViaUserConsent(ClientId clientId,
     baseClient,
     userPrompt,
     hostedDomain: hostedDomain,
+    listenPort: listenPort,
+    customPostAuthPage: customPostAuthPage,
   );
 
   AccessCredentials credentials;
@@ -163,12 +175,13 @@ Future<AutoRefreshingAuthClient> clientViaUserConsent(ClientId clientId,
 ///
 /// {@macro googleapis_auth_close_the_client}
 /// {@macro googleapis_auth_not_close_the_baseClient}
-Future<AutoRefreshingAuthClient> clientViaUserConsentManual(ClientId clientId,
-    List<String> scopes,
-    PromptUserForConsentManual userPrompt, {
-      Client? baseClient,
-      String? hostedDomain,
-    }) async {
+Future<AutoRefreshingAuthClient> clientViaUserConsentManual(
+  ClientId clientId,
+  List<String> scopes,
+  PromptUserForConsentManual userPrompt, {
+  Client? baseClient,
+  String? hostedDomain,
+}) async {
   var closeUnderlyingClient = false;
   if (baseClient == null) {
     baseClient = Client();
@@ -214,21 +227,33 @@ Future<AutoRefreshingAuthClient> clientViaUserConsentManual(ClientId clientId,
 /// {@macro googleapis_auth_hostedDomain_param}
 ///
 /// {@macro googleapis_auth_user_consent_return}
+///
+/// {@template googleapis_auth_listen_port}
+/// The `localhost` port to use when listening for the redirect from a user
+/// browser interaction. Defaults to `0` - which means the port is dynamic.
+///
+/// Generally you want to specify an explicit port so you can configure it
+/// on the Google Cloud console.
+///
+/// {@macro googleapis_auth_custom_post_auth_page}
+/// {@endtemplate}
 Future<AccessCredentials> obtainAccessCredentialsViaUserConsent(
-    ClientId clientId,
-    List<String> scopes,
-    Client client,
-    PromptUserForConsent userPrompt, {
-      String? hostedDomain,
-      String? customPage,
-    }) =>
+  ClientId clientId,
+  List<String> scopes,
+  Client client,
+  PromptUserForConsent userPrompt, {
+  String? hostedDomain,
+  int listenPort = 0,
+  String? customPostAuthPage,
+}) =>
     AuthorizationCodeGrantServerFlow(
       clientId,
       scopes,
       client,
       userPrompt,
       hostedDomain: hostedDomain,
-      customPage: customPage,
+      listenPort: listenPort,
+      customPostAuthPage: customPostAuthPage,
     ).run();
 
 /// Obtain oauth2 [AccessCredentials] using the oauth2 authentication code flow.
@@ -244,12 +269,12 @@ Future<AccessCredentials> obtainAccessCredentialsViaUserConsent(
 ///
 /// {@macro googleapis_auth_user_consent_return}
 Future<AccessCredentials> obtainAccessCredentialsViaUserConsentManual(
-    ClientId clientId,
-    List<String> scopes,
-    Client client,
-    PromptUserForConsentManual userPrompt, {
-      String? hostedDomain,
-    }) =>
+  ClientId clientId,
+  List<String> scopes,
+  Client client,
+  PromptUserForConsentManual userPrompt, {
+  String? hostedDomain,
+}) =>
     AuthorizationCodeGrantManualFlow(
       clientId,
       scopes,

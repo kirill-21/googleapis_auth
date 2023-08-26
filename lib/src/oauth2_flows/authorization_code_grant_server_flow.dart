@@ -5,10 +5,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:http/http.dart' as http;
-
 import '../access_credentials.dart';
-import '../client_id.dart';
 import '../exceptions.dart';
 import '../typedefs.dart';
 import 'auth_code.dart';
@@ -27,19 +24,22 @@ import 'authorization_code_grant_abstract_flow.dart';
 class AuthorizationCodeGrantServerFlow
     extends AuthorizationCodeGrantAbstractFlow {
   final PromptUserForConsent userPrompt;
+  final int listenPort;
+  final String? customPostAuthPage;
 
-  AuthorizationCodeGrantServerFlow(ClientId clientId,
-      List<String> scopes,
-      http.Client client,
-      this.userPrompt, {
-        String? hostedDomain,
-        String? customPage,
-      }) : super(clientId, scopes, client, hostedDomain: hostedDomain,
-    customPage: customPage,);
+  AuthorizationCodeGrantServerFlow(
+    super.clientId,
+    super.scopes,
+    super.client,
+    this.userPrompt, {
+    super.hostedDomain,
+    this.listenPort = 0,
+    this.customPostAuthPage,
+  });
 
   @override
   Future<AccessCredentials> run() async {
-    final server = await HttpServer.bind('localhost', 0);
+    final server = await HttpServer.bind('localhost', listenPort);
 
     try {
       final port = server.port;
@@ -64,7 +64,7 @@ class AuthorizationCodeGrantServerFlow
         if (request.method != 'GET') {
           throw Exception(
             'Invalid response from server '
-                '(expected GET request callback, got: ${request.method}).',
+            '(expected GET request callback, got: ${request.method}).',
           );
         }
 
@@ -94,12 +94,12 @@ class AuthorizationCodeGrantServerFlow
           codeVerifier: codeVerifier,
         );
 
-        // TODO: We could introduce a user-defined redirect page.
         request.response
           ..statusCode = 200
           ..headers.set('content-type', 'text/html; charset=UTF-8')
-          ..write(customPage ??
-              '''
+          ..write(
+            customPostAuthPage ??
+                '''
 <!DOCTYPE html>
 
 <html>

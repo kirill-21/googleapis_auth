@@ -8,8 +8,7 @@ import 'package:http/http.dart';
 
 /// Base class for delegating HTTP clients.
 ///
-/// Depending on [closeUnderlyingClient] it will close the client it is
-/// delegating to or not.
+/// If [closeUnderlyingClient] is `true`, [close] will also close [baseClient].
 abstract class DelegatingClient extends BaseClient {
   final Client baseClient;
   final bool closeUnderlyingClient;
@@ -39,9 +38,9 @@ abstract class DelegatingClient extends BaseClient {
 class RefCountedClient extends DelegatingClient {
   int _refCount;
 
-  RefCountedClient(Client baseClient, {int initialRefCount = 1})
+  RefCountedClient(super.baseClient, {int initialRefCount = 1})
       : _refCount = initialRefCount,
-        super(baseClient, closeUnderlyingClient: true);
+        super(closeUnderlyingClient: true);
 
   @override
   Future<StreamedResponse> send(BaseRequest request) {
@@ -92,9 +91,8 @@ Client nonClosingClient(Client baseClient) =>
 class RequestImpl extends BaseRequest {
   final Stream<List<int>> _stream;
 
-  RequestImpl(String method, Uri url, [Stream<List<int>>? stream])
-      : _stream = stream ?? const Stream.empty(),
-        super(method, url);
+  RequestImpl(super.method, super.url, [Stream<List<int>>? stream])
+      : _stream = stream ?? const Stream.empty();
 
   @override
   ByteStream finalize() {

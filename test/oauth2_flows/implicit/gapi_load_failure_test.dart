@@ -4,10 +4,13 @@
 
 @TestOn('browser')
 @Timeout.factor(4)
+library;
+
 import 'dart:html';
 import 'dart:js' as js;
 
 import 'package:googleapis_auth/auth_browser.dart' as auth;
+import 'package:googleapis_auth/src/browser_utils.dart' as browser_utils;
 import 'package:googleapis_auth/src/oauth2_flows/implicit.dart' as impl;
 import 'package:test/test.dart';
 
@@ -17,8 +20,9 @@ void main() {
   test('gapi-load-failure', () {
     impl.gapiUrl = resource('non_existent.js');
     expect(
+      // ignore: deprecated_member_use_from_same_package
       auth.createImplicitBrowserFlow(_clientId, _scopes),
-      throwsStateError,
+      throwsA(isA<auth.AuthenticationException>()),
     );
   });
 
@@ -36,11 +40,11 @@ void main() {
 
     final sw = Stopwatch()..start();
     try {
+      // ignore: deprecated_member_use_from_same_package
       await auth.createImplicitBrowserFlow(_clientId, _scopes);
       fail('expected error');
     } catch (error) {
-      final elapsed =
-          (sw.elapsed - impl.ImplicitFlow.callbackTimeout).inSeconds;
+      final elapsed = (sw.elapsed - browser_utils.callbackTimeout).inSeconds;
       expect(elapsed, inInclusiveRange(-3, 3));
     }
   });
